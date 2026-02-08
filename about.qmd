@@ -1,9 +1,8 @@
 ---
-title: "About"
+title: "About Me"
 ---
 
-About this site
-
+Hi I'm Storm! I am transfer student at Califronia State Monterey Bay, where I am studying Enviromental Science with a data science minor. I was perviously at Monterey Peninsula Community College, where I received my Natural Science and Social Sciences associate's degree. When I'm not in school or studing I'm either work, voluntering at the Aquarium or practicing Karate. 
 ```{r}
 1 + 1
 ```
