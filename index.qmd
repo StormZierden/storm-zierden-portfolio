@@ -2,9 +2,19 @@
 title: "storm-zierden-portfolio"
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+---
+title: "Storm Zierden"
+about:
+  template: jolla
+  image:# jec-profile.jpg still need to add 
+  links:
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/storm-zierden-b979363ab/
+    - icon: github
+      text: Github
+      href: https://github.com/StormZierden
+---
 
 ```{r}
 1 + 1
