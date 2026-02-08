@@ -1,12 +1,8 @@
 ---
-title: "storm-zierden-portfolio"
----
-
----
 title: "Storm Zierden"
 about:
   template: jolla
-  image:# jec-profile.jpg still need to add 
+  image: san-diego-dorid.jpg  
   links:
     - icon: linkedin
       text: LinkedIn
@@ -16,6 +12,22 @@ about:
       href: https://github.com/StormZierden
 ---
 
-```{r}
-1 + 1
+---
+
+---
+
+Storm Zierden is a student at California State Monterey Bay, studying Enviormental Science.
+
+```         
+Education
 ```
+
+California State Monterey Bay \| Monterey, CA B.S in Enviormental Science, Technology and Policy \| 2025-Current Monterey Peninsula Community College \| Monterey, CA A.S in Social Science \| 2024-2025 Monterey Peninsula Community College \| Monterey, CA A.S in Natural Science \| 2024-2025
+
+```         
+Experience
+```
+
+Asilomar Conference Ground \| Night Audit \| October 2025 - present
+
+Pacific Grove Natural History Museum \| Intern \| March 2024 - Januaray 2025
