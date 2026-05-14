@@ -1,0 +1,215 @@
+---
+title: "Conservation Focus on California's Red-Legged Frog"
+author: "Storm Zierden"
+format: html
+editor: source
+execute:
+  eval: false 
+  echo: false
+  warning: false
+  message: false
+  
+---
+
+
+
+
+```{r}
+#| label: setup
+#| eval: TRUE
+
+library(tidyverse)
+library("sf")
+library("tigris")
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+#| label: data
+redlegged <-read_csv("data-bad/redlegged-original/observations-714460.csv")
+
+bullfrog <- read_csv("data-bad/bullfrog-original/observations-714470.csv")
+```
+
+```{r}
+#| label: shapefile
+
+counties_sf <- counties(cb = TRUE, class = "sf", year = 2022)
+
+```
+
+## Data Description
+This project uses iNaturalist research‑grade observations for two amphibian species in California, the California Red‑Legged Frog (Rana draytonii), a native and federally threatened species and the American Bullfrog (Lithobates catesbeianus), an invasive species known to compete with native amphibians
+
+The datasets were downloaded from iNaturalist’s public export tool on May 7, 2026.
+California Red‑Legged Frog dataset
+
+Source:
+https://www.inaturalist.org/observations/export?quality_grade=research&identifications=any&taxon_id=67016&verifiable=true&spam=false
+
+American Bullfrog dataset
+https://www.inaturalist.org/observations/export?quality_grade=research&identifications=any&place_id=14&taxon_id=65979&verifiable=true&spam=false
+
+## Data Cleaning
+The first part of cleaning within this data was turning both the latitude and longitude of the data into data that R can understand and we can use for data visualization. This is done by converting the lat and long data to counties that are within the same coordinates as the counties. This allows for any data that have coordinates that might have faulty positional accuracy to still be counted. We also dropped unnecessary columns that don’t enhance our understanding of the data. And filter out observations that lie outside of California or do not have a designated county to them. We also separated the date column into year, month, and day.
+Next, for each of the data sets, we counted how many times an observation was found per each county per year and then filtered years that didn’t have more than five observations per year and then filtered further for counties that didn’t have at least five years of observations. For our second graph, in order to make a comparison of the frogs, we need to join the two species that had matching years and counties. Then we grouped the data up by year and counted the amount of each species within that year. After that we exchanged the places within the table to make it wider so that each species has its own column with its counts inside of it. Species is now its own column, and count is its own column as well. This allows us to make our comparison graph.
+```{r}
+#| label: clean-redleg
+
+cleanred <- redlegged |>
+  select(c(id, observed_on, quality_grade, place_guess, latitude, longitude, species_guess, scientific_name, common_name)) |>
+  drop_na() |>
+filter(place_guess != "Ensenada, MX-BN, MX") |>
+  separate_wider_delim(observed_on, delim = "-", names = c("year", "month", "day"))|>
+st_as_sf(coords = c("longitude", "latitude"), crs = 4269) |>
+   st_join(counties_sf, join = st_nearest_feature) |>
+st_drop_geometry()
+
+```
+
+
+```{r}
+#| label: clean-bullfrog
+
+cleanbull <- bullfrog |>
+   select(c(id, observed_on, quality_grade, latitude, longitude, species_guess, scientific_name, common_name)) |>
+  drop_na() |>
+  separate_wider_delim(observed_on, delim = "-", names = c("year", "month", "day"), )|>
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4269) |>
+  st_join(counties_sf, join = st_intersects) |>
+  st_drop_geometry() 
+
+  
+```
+
+```{r}
+#| label: counts_red
+
+ red_count <- cleanred|>
+  count(NAME, year) |>
+  group_by(NAME) |>
+  filter(n >= 5) |>
+  filter(n_distinct(year) > 5) |>
+  filter(year < '2026')
+
+```
+
+
+```{r}
+#| label: count_bull
+
+bull_count <- cleanbull|>
+  count(NAME, year) |>
+  group_by(NAME) |>
+  filter(n >= 5) |>
+  filter(n_distinct(year) > 5) |>
+  filter(year < '2026')
+```
+
+
+```{r}
+#| label: join
+
+frogs <- bull_count |>
+  inner_join(red_count, by = c("NAME", "year")) |>
+  replace_na(list(n.x = 0,
+               n.y = 0)) |>
+  rename(bullfrog = n.x,
+              redfrog = n.y) |>
+  group_by(year) |>
+  summarise(
+  Bullfrog = sum(bullfrog),
+  Redfrog =sum(redfrog)
+  ) |>
+  pivot_longer(
+    cols = c(Bullfrog, Redfrog),
+    names_to = "Species",
+    values_to = "count"
+  )
+```
+
+
+```{r}
+#| label: create_csv
+
+write.csv(frogs, "data-clean/frog.csv", row.names = FALSE)
+ write.csv(red_count, "data-clean/red_count.csv", row.names = FALSE)
+
+```
+
+
+```{r}
+#| label: read_clean
+#| eval: TRUE
+
+frog <- read.csv("data-clean/frog.csv")
+red_count <- read.csv("data-clean/red_count.csv")
+```
+
+## Visulization 1
+This first visualization is a comparison of the California red-frog population within each county over the years. As we can see, there is a gradual increase of the red frogs within the years. Some species like Sonoma have very sudden population growth.
+```{r}
+#| label: redfrog_viz
+#| eval: TRUE
+
+red_count|>
+  ggplot(aes(x = as.numeric(year), y = n, group = NAME, color = NAME)) +
+  geom_line() +
+  geom_point() + 
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(x = "Year", 
+       y = "Number of Frogs", 
+       title = "Yearly Growth of California's Red-Legged Frog within Each County",
+       caption = "Yearly Spotting of California Red-Legged Frog")
+  
+```
+
+## Visulation 2
+This is a more in-depth look at the earlier comparisons of the county population growth by year, where we can see the actual growth within each county. This helps us see when many of the counties started having a population of the red-legged frog but also shows us that certain counties like Santa Barbara and San Luis Obispo have had populations for quite a long time, but these populations are not growing at all.  
+```{r}
+#| label: red_viz2
+#| eval: TRUE
+
+red_count|>
+  ggplot(aes(x = as.numeric(year), y = n, group = NAME, color = NAME)) +
+  geom_line() +
+  geom_point() + 
+  facet_wrap("NAME") +
+  theme_light() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  ) +
+  labs(x = "Year", 
+       y = "Number of Frogs", 
+       title = "Yearly Growth of California's Red-Legged Frog within Each County",
+       caption = "Split of Population by County")
+```
+## Visulation 3
+A comparison between the population rates of the California red-legged frog and the American bullfrog from the years 2016 to 2025. We can see within the comparison that the American Bullfrog at the very beginning has a larger population than that of the California Red-legged frog; however, as the native species population begins to drastically increase, either the American Bullfrog population grows extremely slowly
+
+```{r}
+#| label: comparison_viz
+#| eval: TRUE
+
+frog |>
+  ggplot(aes(x = year, y = count, fill = Species)) +
+  geom_col(position = "dodge") +
+  scale_fill_manual(
+    values = c(
+      Bullfrog = "#556b2f",
+      Redfrog  = "#AA2704"
+    )
+  ) +
+  labs(
+    x = "Year",
+    y = "Total Number of Frogs",
+    title = "California Red-Legged Frog vs American Bullfrog Population in California Over Time",
+    caption = "Comparison of Species Spottings"
+  ) +
+  theme_light(base_size = 14)
+```
+
